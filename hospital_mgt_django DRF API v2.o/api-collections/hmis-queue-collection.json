@@ -1,0 +1,262 @@
+{
+  "info": {
+    "name": "HMIS Queue Management API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json "
+  },
+  "item": [
+    {
+      "name": "List All Queue Entries",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/queue/",
+          "protocol": "https",
+          "host": ["{{base_url}}"],
+          "path": ["api", "queue"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Add New Queue Entry",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"visit\": {{visit_id}},\n  \"department\": \"Triage\",\n  \"priority\": \"Normal\",\n  \"status\": \"Waiting\",\n  \"notes\": \"Initial triage required\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/queue/",
+          "protocol": "https",
+          "host": ["{{base_url}}"],
+          "path": ["api", "queue"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Queue by Visit ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/visits/{{visit_id}}/queue/",
+          "protocol": "https",
+          "host": ["{{base_url}}"],
+          "path": ["api", "visits", "{{visit_id}}", "queue"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Update Queue Status",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"In Progress\",\n  \"start_time\": \"{{current_datetime}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/queue/{{queue_id}}/",
+          "protocol": "https",
+          "host": ["{{base_url}}"],
+          "path": ["api", "queue", "{{queue_id}}"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Transfer Patient Between Departments",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"department\": \"Cardiology\",\n  \"status\": \"Waiting\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/queue/{{queue_id}}/",
+          "protocol": "https",
+          "host": ["{{base_url}}"],
+          "path": ["api", "queue", "{{queue_id}}"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Complete Queue Entry",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"Completed\",\n  \"end_time\": \"{{current_datetime}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/queue/{{queue_id}}/",
+          "protocol": "https",
+          "host": ["{{base_url}}"],
+          "path": ["api", "queue", "{{queue_id}}"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Queue Entry",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/queue/{{queue_id}}/",
+          "protocol": "https",
+          "host": ["{{base_url}}"],
+          "path": ["api", "queue", "{{queue_id}}"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Queue Stats per Department",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/queue/stats/",
+          "protocol": "https",
+          "host": ["{{base_url}}"],
+          "path": ["api", "queue", "stats"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Queue by Department",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/queue/?department=Triage",
+          "protocol": "https",
+          "host": ["{{base_url}}"],
+          "path": ["api", "queue"],
+          "query": [
+            {
+              "key": "department",
+              "value": "Triage"
+            }
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "id": "base_url",
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "id": "access_token",
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "id": "visit_id",
+      "key": "visit_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "id": "queue_id",
+      "key": "queue_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "id": "current_datetime",
+      "key": "current_datetime",
+      "value": "2025-05-20T10:30:00Z",
+      "type": "string"
+    }
+  ]
+}

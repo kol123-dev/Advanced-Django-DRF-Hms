@@ -1,0 +1,70 @@
+patient details
+GET /patient/7
+
+{
+    "id": 7,
+    "mrn": "MRN123466",
+    "first_name": "John",
+    "last_name": "Doe",
+    "date_of_birth": "1990-05-15",
+    "gender": "M",
+    "blood_group": "O+",
+    "age": 35,
+    "phone": "+254712345678",
+    "email": "john.doe@example.com",
+    "address": "123 Main Street, Nairobi, Kenya",
+    "emergency_contact_name": "Jane Doe",
+    "emergency_contact_phone": "+254798765432",
+    "notes": "Patient has a history of mild asthma.",
+    "created_at": "2025-05-16T12:26:55.821563+03:00",
+    "updated_at": "2025-05-16T12:26:55.821877+03:00",
+    "chronic_conditions": [],
+    "allergies": [],
+    "surgical_history": [],
+    "family_history": []
+}
+
+"GET /api/visits/3/ HTTP/1.1
+
+{
+    "id": 3,
+    "start_time": "2025-05-16T12:31:05.371680+03:00",
+    "end_time": null,
+    "visit_type": "OPD",
+    "status": "completed",
+    "reason_for_visit": "Chest Pains",
+    "referring_doctor": null,
+    "visit_notes": null,
+    "patient": {
+        "id": 7,
+        "mrn": "MRN123466",
+        "first_name": "John",
+        "last_name": "Doe",
+        "date_of_birth": "1990-05-15",
+        "gender": "M",
+        "blood_group": "O+",
+        "age": 35,
+        "phone": "+254712345678",
+        "email": "john.doe@example.com",
+        "address": "123 Main Street, Nairobi, Kenya",
+        "emergency_contact_name": "Jane Doe",
+        "emergency_contact_phone": "+254798765432",
+        "notes": "Patient has a history of mild asthma.",
+        "created_at": "2025-05-16T12:26:55.821563+03:00",
+        "updated_at": "2025-05-16T12:26:55.821877+03:00",
+        "chronic_conditions": [],
+        "allergies": [],
+        "surgical_history": [],
+        "family_history": []
+    },
+    "encounters": [],
+    "vitals": [],
+    "diagnoses": [],
+    "prescriptions": [],
+    "lab_orders": [],
+    "radiology_orders": [],
+    "procedures": [],
+    "referrals": [],
+    "followups": [],
+    "notes": []
+}
