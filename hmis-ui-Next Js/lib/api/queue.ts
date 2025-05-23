@@ -1,7 +1,25 @@
+// lib/api/queue.ts
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // 🔁 Types
 import type { QueueEntry, QueuePatient, QueueStatus } from "../types/queue";
+
+// 💡 Helper functions
+function calculateWaitTime(arrivalTimeString: string): number {
+  const arrivalTime = new Date(arrivalTimeString);
+  const now = new Date();
+  const diffMs = now.getTime() - arrivalTime.getTime();
+  return Math.floor(diffMs / 60000);
+}
+
+function formatArrival(arrivalTimeString: string): string {
+  const arrivalTime = new Date(arrivalTimeString);
+  return arrivalTime.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
 
 /**
  * 🔁 Get all queue entries
@@ -89,8 +107,10 @@ export async function getQueueForVisit(visitId: string): Promise<QueueEntry[]> {
 /**
  * 🔁 Add a new queue entry for a visit
  */
+
 export async function addPatientToQueue(
-  visitId: string
+  visitId: string,
+  department: string
 ): Promise<{ ok: boolean; queueId?: number }> {
   const token = localStorage.getItem("auth_tokens")
     ? JSON.parse(localStorage.getItem("auth_tokens") as string).access
@@ -103,22 +123,22 @@ export async function addPatientToQueue(
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
-      status: "Waiting",
+      visit: parseInt(visitId), // ✅ Required by backend
+      department, // ✅ Department name (must match choices)
     }),
   });
 
   if (!res.ok) {
-    const errorData = await res
-      .json()
-      .catch(() => ({ detail: "Unknown error" }));
-    console.error("Error adding to queue:", errorData);
+    const errorData = await res.json().catch(() => ({
+      detail: "Unknown error",
+    }));
+    console.error("Add to Queue Error:", errorData);
     return { ok: false };
   }
 
   const result = await res.json();
   return { ok: true, queueId: result.id };
 }
-
 /**
  * 🔁 Update queue entry (status, department, etc.)
  */

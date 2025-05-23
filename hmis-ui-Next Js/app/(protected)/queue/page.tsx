@@ -1,13 +1,13 @@
+// app/(protected)/queue/page.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
-  CardFooter,
 } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -19,111 +19,81 @@ import Link from "next/link";
 import { PatientQueueTable } from "@/components/Queue/PatientQueueTable";
 import { DepartmentQueueCard } from "@/components/Queue/DepartmentQueueCard";
 
-// 📡 API
-import {
-  getQueuePatients,
-  updateQueueEntry,
-  deleteQueueEntry,
-  QueueStatus,
-} from "@/lib/api/queue";
+// 🎯 Hook
+import { useQueue } from "@/hooks/useQueue";
 
 // 🔁 Types
-import type { QueuePatient } from "@/lib/api/queue";
+import type { QueuePatient, QueueStatus } from "@/lib/types/queue";
 
 export default function QueuePage() {
-  const [patients, setPatients] = useState<QueuePatient[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    queue,
+    loading,
+    error,
+    stats,
+    refetch,
 
-  // Load queue patients with patient details
-  useEffect(() => {
-    async function loadQueueData() {
-      try {
-        const data = await getQueuePatients(); // GET /api/queue/
-        setPatients(data);
-      } catch (err) {
-        console.error("Error loading queue", err);
-      } finally {
-        setLoading(false);
-      }
-    }
+    addToQueue,
+    updateQueueStatus,
+    removeQueueEntry,
 
-    loadQueueData();
-  }, []);
+    // ✨ Destructure new actions
+    updatePriority,
+    transferDepartment,
+  } = useQueue();
 
-  useEffect(() => {
-    const updateQueueStatus = async (id: number, newStatus: QueueStatus) => {
-      const success = await updateQueueEntry(id.toString(), {
-        status: newStatus,
-        ...(newStatus === "In Progress" && {
-          start_time: new Date().toISOString(),
-        }),
-        ...(newStatus === "Completed" && {
-          end_time: new Date().toISOString(),
-        }),
-      });
-
-      if (!success) {
-        alert("❌ Failed to update queue status");
-      }
-    };
-
-    // You can expose this via context or state if needed
-  }, []);
+  const [tab, setTab] = useState("all");
 
   if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
 
-  // Summary stats based on current queue
+  // ✅ Summary based on backend stats
   const summary = {
-    totalWaiting: patients.filter((p) => p.status === "Waiting").length,
-    averageWaitTime: Math.round(
-      patients
-        .filter((p) => p.status === "Waiting")
-        .reduce((acc, p) => acc + p.waitTime, 0) /
-        (patients.filter((p) => p.status === "Waiting").length || 1)
-    ),
-    emergencyCases: patients.filter((p) => p.priority === "Emergency").length,
-    completedToday: patients.filter((p) => p.status === "Completed").length,
+    totalWaiting: stats?.by_status.Waiting || 0,
+    averageWaitTime: stats?.average_wait_time_minutes || 0,
+    emergencyCases: stats?.by_priority.Emergency || 0,
+    completedToday: stats?.by_status.Completed || 0,
   };
 
-  const departmentQueues = [
-    { name: "Triage", waiting: 3, avgWait: 10 },
-    { name: "Consultation R1", waiting: 4, avgWait: 25 },
-    { name: "Orthopedics", waiting: 2, avgWait: 15 },
-    { name: "Lab", waiting: 5, avgWait: 20 },
-    { name: "Pharmacy", waiting: 6, avgWait: 12 },
-    { name: "Dental", waiting: 2, avgWait: 30 },
-    { name: "Eye Clinic", waiting: 3, avgWait: 22 },
-  ];
+  // ✅ Convert stats.by_department to array for cards
+  const departmentQueues = Object.entries(stats?.by_department || {}).map(
+    ([name, waiting]) => ({
+      name,
+      waiting,
+      avgWait: 0, // Placeholder — later you can calculate per department
+    })
+  );
 
-  // Update status (Waiting → In Progress → Completed)
-  const handleStatusChange = (id: number, newStatus: QueueStatus) => {
-    updateQueueEntry(id.toString(), {
+  // ✏️ Handle status change (e.g., Waiting → In Progress → Completed)
+  const handleStatusChange = async (id: number, newStatus: QueueStatus) => {
+    const confirm = window.confirm(
+      `Are you sure you want to set status to "${newStatus}"?`
+    );
+    if (!confirm) return;
+
+    const success = await updateQueueStatus(id.toString(), {
       status: newStatus,
       ...(newStatus === "In Progress" && {
         start_time: new Date().toISOString(),
       }),
-      ...(newStatus === "Completed" && {
-        end_time: new Date().toISOString(),
-      }),
+      ...(newStatus === "Completed" && { end_time: new Date().toISOString() }),
     });
 
-    setPatients((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status: newStatus } : p))
-    );
+    if (!success) {
+      alert("❌ Failed to update status");
+    }
   };
 
-  // Remove patient from queue
+  // 🗑 Remove patient from queue
   const handleRemoveFromQueue = async (id: number) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to remove this patient from queue?"
+    const confirm = window.confirm(
+      "Are you sure you want to remove this patient?"
     );
-    if (!confirmDelete) return;
+    if (!confirm) return;
 
-    const success = await deleteQueueEntry(id.toString());
-    if (success) {
-      setPatients((prev) => prev.filter((p) => p.id !== id));
-    } else {
-      alert("❌ Failed to remove patient from queue");
+    const success = await removeQueueEntry(id.toString());
+    if (!success) {
+      alert("❌ Failed to remove patient");
     }
   };
 
@@ -141,6 +111,7 @@ export default function QueuePage() {
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {/* Patients Waiting */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">
@@ -156,6 +127,7 @@ export default function QueuePage() {
           </CardContent>
         </Card>
 
+        {/* Average Wait Time */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">
@@ -173,6 +145,7 @@ export default function QueuePage() {
           </CardContent>
         </Card>
 
+        {/* Emergency Cases */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">
@@ -188,6 +161,7 @@ export default function QueuePage() {
           </CardContent>
         </Card>
 
+        {/* Completed Today */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">
@@ -201,6 +175,89 @@ export default function QueuePage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Patient Queue Table */}
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle>Patient Queue</CardTitle>
+              <CardDescription>
+                Manage patients currently in the waiting queue
+              </CardDescription>
+            </div>
+            <Input placeholder="Search patients..." className="w-1/4" />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={tab} onValueChange={setTab} className="space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between gap-4">
+              <TabsList>
+                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="waiting">Waiting</TabsTrigger>
+                <TabsTrigger value="in-progress">In Progress</TabsTrigger>
+                <TabsTrigger value="completed">Completed</TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent value="all" className="space-y-4">
+              <PatientQueueTable
+                patients={queue}
+                onUpdateStatus={handleStatusChange}
+                onRemoveFromQueue={handleRemoveFromQueue}
+                onUpdatePriority={(id, newPriority) =>
+                  updatePriority(id.toString(), newPriority)
+                }
+                onTransferDepartment={(id, newDepartment) =>
+                  transferDepartment(id.toString(), newDepartment)
+                }
+              />
+            </TabsContent>
+
+            <TabsContent value="waiting" className="space-y-4">
+              <PatientQueueTable
+                patients={queue.filter((p) => p.status === "Waiting")}
+                onUpdateStatus={handleStatusChange}
+                onRemoveFromQueue={handleRemoveFromQueue}
+                onUpdatePriority={(id, newPriority) =>
+                  updatePriority(id.toString(), newPriority)
+                }
+                onTransferDepartment={(id, newDepartment) =>
+                  transferDepartment(id.toString(), newDepartment)
+                }
+              />
+            </TabsContent>
+
+            <TabsContent value="in-progress" className="space-y-4">
+              <PatientQueueTable
+                patients={queue.filter((p) => p.status === "In Progress")}
+                onUpdateStatus={handleStatusChange}
+                onRemoveFromQueue={handleRemoveFromQueue}
+                onUpdatePriority={(id, newPriority) =>
+                  updatePriority(id.toString(), newPriority)
+                }
+                onTransferDepartment={(id, newDepartment) =>
+                  transferDepartment(id.toString(), newDepartment)
+                }
+              />
+            </TabsContent>
+
+            <TabsContent value="completed" className="space-y-4">
+              <PatientQueueTable
+                patients={queue.filter((p) => p.status === "Completed")}
+                onUpdateStatus={handleStatusChange}
+                onRemoveFromQueue={handleRemoveFromQueue}
+                onUpdatePriority={(id, newPriority) =>
+                  updatePriority(id.toString(), newPriority)
+                }
+                onTransferDepartment={(id, newDepartment) =>
+                  transferDepartment(id.toString(), newDepartment)
+                }
+              />
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
 
       {/* Department Stats */}
       <Card>
@@ -216,68 +273,6 @@ export default function QueuePage() {
               <DepartmentQueueCard key={dept.name} {...dept} />
             ))}
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Patient Queue Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-start">
-            <div>
-              <CardTitle>Patient Queue</CardTitle>
-              <CardDescription>
-                Manage patients currently in the waiting queue
-              </CardDescription>
-            </div>
-            <Input
-              placeholder="Search patients in queue..."
-              className="w-1/4"
-            />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="all" className="space-y-4">
-            <div className="flex flex-col sm:flex-row justify-between gap-4">
-              <TabsList>
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="waiting">Waiting</TabsTrigger>
-                <TabsTrigger value="in-progress">In Progress</TabsTrigger>
-                <TabsTrigger value="completed">Completed</TabsTrigger>
-              </TabsList>
-            </div>
-
-            <TabsContent value="all" className="space-y-4">
-              <PatientQueueTable
-                patients={patients}
-                onUpdateStatus={handleStatusChange}
-                onRemoveFromQueue={handleRemoveFromQueue}
-              />
-            </TabsContent>
-
-            <TabsContent value="waiting" className="space-y-4">
-              <PatientQueueTable
-                patients={patients.filter((p) => p.status === "Waiting")}
-                onUpdateStatus={handleStatusChange}
-                onRemoveFromQueue={handleRemoveFromQueue}
-              />
-            </TabsContent>
-
-            <TabsContent value="in-progress" className="space-y-4">
-              <PatientQueueTable
-                patients={patients.filter((p) => p.status === "In Progress")}
-                onUpdateStatus={handleStatusChange}
-                onRemoveFromQueue={handleRemoveFromQueue}
-              />
-            </TabsContent>
-
-            <TabsContent value="completed" className="space-y-4">
-              <PatientQueueTable
-                patients={patients.filter((p) => p.status === "Completed")}
-                onUpdateStatus={handleStatusChange}
-                onRemoveFromQueue={handleRemoveFromQueue}
-              />
-            </TabsContent>
-          </Tabs>
         </CardContent>
       </Card>
     </div>

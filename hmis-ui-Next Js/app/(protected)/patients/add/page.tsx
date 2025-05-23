@@ -260,7 +260,7 @@ export default function AddPatientPage() {
           </div>
 
           {/* Que Selection */}
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <Label htmlFor="que">Que</Label>
             <Select
               onValueChange={(val) => handleSelectChange(val, "que")}
@@ -276,7 +276,7 @@ export default function AddPatientPage() {
                 <SelectItem value="4">Insurance Que</SelectItem>
               </SelectContent>
             </Select>
-          </div>
+          </div> */}
         </CardContent>
         <CardFooter className="flex justify-between">
           <Button variant="outline" asChild>

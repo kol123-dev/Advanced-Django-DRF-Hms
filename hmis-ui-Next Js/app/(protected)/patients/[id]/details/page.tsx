@@ -137,9 +137,6 @@ export default function PatientDetailsPage() {
           ) : visits.length === 0 ? (
             <div className="py-4 text-muted-foreground">
               <p>This patient has no visit history yet.</p>
-              <Button asChild className="mt-4" variant="outline">
-                <Link href={`/patients/${id}/new-visit`}>Start New Visit</Link>
-              </Button>
             </div>
           ) : (
             <div className="space-y-6">

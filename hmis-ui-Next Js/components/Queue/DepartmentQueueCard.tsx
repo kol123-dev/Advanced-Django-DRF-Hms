@@ -1,3 +1,4 @@
+// components/Queue/DepartmentQueueCard.tsx
 "use client";
 
 import React from "react";

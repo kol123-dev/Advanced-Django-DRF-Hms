@@ -20,26 +20,37 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 
+// 🔁 Hook
+import { useQueue } from "@/hooks/useQueue";
+
 export default function NewVisitPage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
 
+  // 🧠 State for form fields including que selection
   const [visitData, setVisitData] = useState({
     visit_type: "OPD",
     reason_for_visit: "",
     status: "scheduled",
+    que: "", // This will hold the department name like "Emergency"
   });
 
+  // 🔁 Hook to add to queue
+  const { addToQueue } = useQueue();
+
+  // 📥 Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setVisitData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // 📦 Handle select changes
   const handleSelectChange = (value: string, field: string) => {
     setVisitData((prev) => ({ ...prev, [field]: value }));
   };
 
+  // 💾 Submit handler
   const handleSubmit = async () => {
     const token = localStorage.getItem("auth_tokens")
       ? JSON.parse(localStorage.getItem("auth_tokens") as string).access
@@ -58,8 +69,6 @@ export default function NewVisitPage() {
       status: visitData.status || "scheduled",
     };
 
-    console.log("Sending Visit Data:", body);
-
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/visits/`,
@@ -72,9 +81,6 @@ export default function NewVisitPage() {
           body: JSON.stringify(body),
         }
       );
-
-      // 🔍 Log response status for debugging
-      console.log("Response Status:", res.status);
 
       const contentType = res.headers.get("content-type");
 
@@ -91,21 +97,18 @@ export default function NewVisitPage() {
           detail: "Unknown error occurred",
         }));
 
-        console.error("Validation Errors:", errorData);
-
-        // Show user-friendly error messages
-        let errorMessage = "Failed to create visit.";
+        let errorMessage = "Failed to create visit.\n";
 
         if (errorData.visit_type) {
-          errorMessage += `\nVisit Type: ${errorData.visit_type.join(", ")}`;
+          errorMessage += `Visit Type: ${errorData.visit_type.join(", ")}\n`;
         }
         if (errorData.patient) {
-          errorMessage += `\nPatient: ${errorData.patient.join(", ")}`;
+          errorMessage += `Patient: ${errorData.patient.join(", ")}\n`;
         }
         if (errorData.reason_for_visit) {
-          errorMessage += `\nReason for Visit: ${errorData.reason_for_visit.join(
+          errorMessage += `Reason for Visit: ${errorData.reason_for_visit.join(
             ", "
-          )}`;
+          )}\n`;
         }
 
         alert(errorMessage);
@@ -113,6 +116,14 @@ export default function NewVisitPage() {
       }
 
       const result = await res.json();
+
+      // ✅ If user selected a queue, add them to it
+      if (visitData.que) {
+        const success = await addToQueue(result.id.toString(), visitData.que);
+        if (!success.ok) {
+          alert("⚠️ Visit created but failed to add to queue.");
+        }
+      }
 
       alert("✅ Visit created successfully!");
       router.push(`/visits/${result.id}`);
@@ -183,6 +194,27 @@ export default function NewVisitPage() {
                 <SelectItem value="cancelled">Cancelled</SelectItem>
                 <SelectItem value="referred">Referred to Specialist</SelectItem>
                 <SelectItem value="discharged">Discharged</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Queue Selection */}
+          <div className="space-y-2">
+            <Label htmlFor="que">Add to Queue</Label>
+            <Select
+              onValueChange={(val) => handleSelectChange(val, "que")}
+              value={visitData.que}
+            >
+              <SelectTrigger id="que">
+                <SelectValue placeholder="Select Queue" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Triage">Triage</SelectItem>
+                <SelectItem value="OPD">Outpatient Department</SelectItem>
+                <SelectItem value="Emergency">Emergency Department</SelectItem>
+                <SelectItem value="VIP">VIP Department</SelectItem>
+                <SelectItem value="Laboratory">Laboratory</SelectItem>
+                <SelectItem value="Pharmacy">Pharmacy</SelectItem>
               </SelectContent>
             </Select>
           </div>
